@@ -1,0 +1,7 @@
+{
+  "port": 80,
+
+  "discord": {
+    "error": "https://discord.com/api/webhooks/A/B"
+  }
+}
