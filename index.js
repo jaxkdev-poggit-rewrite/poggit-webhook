@@ -13,18 +13,4 @@
  *  limitations under the License.
  */
 
-function sendWebhook(type, content){
-    const axios = require("axios");
-    const config = require("../config.json");
-    axios.post(config.discord[type], {
-        'content': content
-    }).then(r => {
-        if(r.status !== 204){
-            console.error("Failed to deliver webhook("+type+"): "+r.status+" - "+r.statusText);
-        }
-    }).catch(e => {
-        console.error("Failed to deliver webhook("+type+"): "+e.response.status+" - "+e.response.statusText);
-    });
-}
-
-module.exports = {sendWebhook};
+require("./src/Server");

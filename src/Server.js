@@ -13,11 +13,16 @@
  *  limitations under the License.
  */
 
-const express = require("express");
-const app = express();
+console.log("Loading logger...");
+const logger = require("./Logger");
+
+logger.info("Loading config...");
 //Caches so restart required for changes to take affect.
 const config = require("../config.json");
 
+logger.info("Loading server handlers...");
+const express = require("express");
+const app = express();
 //Add some data to request for logging purposes before any handlers.
 app.use(function(req, res, next){
     const utils = require("./Utils");
@@ -26,15 +31,17 @@ app.use(function(req, res, next){
 
     res.setHeader("X-Poggit-Webhook-Request-ID", req.id);
     res.removeHeader("X-Powered-By");
-    console.log("Request ("+req.url+") received from ("+req.ip+"), RequestID: "+req.id);
+    logger.info("Request ("+req.url+") received from ("+req.ip+"), RequestID: "+req.id);
     next();
 })
 
-app.get("/", function(req, res){
+/*app.get("/", function(req, res){
     res.status(200);
     res.setHeader("Content-Type", "text/plain");
     res.send("Request ID: "+req.id);
-});
+});*/
+
+// Load all paths here.
 
 app.all("*", function(){
     throw new Error("Test error thrown in handler (this would normally be a 404 but sims a 500 hehehe(unhandled).");
@@ -43,20 +50,19 @@ app.all("*", function(){
 
 // Process error handler:
 process.on("uncaughtException", err => {
-    console.error("Uncaught exception occurred: "+err.stack);
+    logger.error("Uncaught exception occurred: "+err.stack);
 
     const discord = require("./DiscordWebhook");
-    discord.sendWebhook('error', "["+req.id + "]\n```" + err.stack.substr(0, 1960) + "```").finally(()=>{
-        //Only exit after attempting to log error to discord.
-        process.exit(1);
-    })
+    discord.sendWebhook('error', "[Internal]\n```" + err.stack.substr(0, 1960) + "```")
+
+    //process.exit(1);
 })
 
 // Handle errors that occur during handling of requests:
 // noinspection JSUnusedLocalSymbols (Must have 4 arguments for express to know its a error handler.)
 function expressErrorHandler(err, req, res, next){
     if(req.id === undefined) req.id = "N/A - Internal";
-    console.error("["+req.id+"]",err);
+    logger.error("["+req.id+"]",err);
 
     //Discord
     const discord = require("./DiscordWebhook");
@@ -70,5 +76,9 @@ function expressErrorHandler(err, req, res, next){
 app.use(expressErrorHandler);
 
 app.listen(config.port, () => {
-    console.log("Server running on port "+config.port);
+    logger.info("Server running on port "+config.port);
 });
+
+logger.info("Setup complete, Server should start shortly.");
+
+module.exports = {};

@@ -2,9 +2,9 @@
   "name": "poggit-webhook",
   "version": "1.0.0",
   "description": "Poggits webhook backend server",
-  "main": "src/Server.js",
+  "main": "index.js",
   "scripts": {
-    "server": "node src/Server.js",
+    "server": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,6 +19,8 @@
   "homepage": "https://github.com/jaxkdev-poggit-rewrite/poggit-webhook#readme",
   "dependencies": {
     "axios": "^0.21.1",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "winston": "^3.3.3",
+    "winston-daily-rotate-file": "^4.5.0"
   }
 }
