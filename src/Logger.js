@@ -22,13 +22,14 @@ const transport = new transports.DailyRotateFile({
     filename: path.join(__dirname, '../logs', '%DATE%.log'),
     datePattern: 'YYYY-MM-DD',
     zippedArchive: true,
-    maxSize: '20m'
+    maxSize: '20m',
+    level: 'debug'
 });
 
 const logger = createLogger({
     transports: [
         transport,
-        new transports.Console()
+        new transports.Console({ level: 'debug' }) //TODO Debug to console only in development mode.
     ],
     format: combine(
         timestamp(),
@@ -41,6 +42,6 @@ const logger = createLogger({
 //Sets the default logger to the above.
 add(logger);
 
-logger.info("Logger created.");
+logger.debug("------START------");
 
 module.exports = logger;
