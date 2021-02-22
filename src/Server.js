@@ -18,7 +18,7 @@ const logger = require("./Logger");
 
 logger.info("Loading config...");
 //Caches so restart required for changes to take affect.
-require("../config.json");
+const config = require("../config.json");
 
 logger.info("Loading server handlers...");
 const express = require("express");
