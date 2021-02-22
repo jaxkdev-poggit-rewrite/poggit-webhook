@@ -18,7 +18,7 @@ const logger = require("./Logger");
 
 logger.info("Loading config...");
 //Caches so restart required for changes to take affect.
-const config = require("../config.json");
+require("../config.json");
 
 logger.info("Loading server handlers...");
 const express = require("express");
@@ -27,7 +27,7 @@ const app = express();
 //Add some data to request for logging purposes before any handlers.
 app.use(function(req, res, next){
     const utils = require("./Utils");
-    req.id = utils.generateId(12);
+    req.id = "WS-"+utils.generateId(10);
     req.ip = req.headers["x-forwarded-for"] || req.ip;
 
     res.setHeader("X-Poggit-Webhook-Request-ID", req.id);
