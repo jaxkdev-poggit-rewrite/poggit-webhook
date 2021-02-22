@@ -23,6 +23,7 @@ const config = require("../config.json");
 logger.info("Loading server handlers...");
 const express = require("express");
 const app = express();
+
 //Add some data to request for logging purposes before any handlers.
 app.use(function(req, res, next){
     const utils = require("./Utils");
@@ -35,28 +36,54 @@ app.use(function(req, res, next){
     next();
 })
 
-/*app.get("/", function(req, res){
+/**
+ * GET /
+ * poggit-webhook doesnt actually provide ANY UI for users its sole purpose is to receive events from github webhooks.
+ */
+app.get("/", function(req, res){
     res.status(200);
-    res.setHeader("Content-Type", "text/plain");
-    res.send("Request ID: "+req.id);
-});*/
+    res.send("200 - OK");
+});
 
-// Load all paths here.
-
-app.all("*", function(){
-    throw new Error("Test error thrown in handler (this would normally be a 404 but sims a 500 hehehe(unhandled).");
+/**
+ * POST /github/webhook_id
+ */
+app.post("/github/:webhookId", function(req, res){
+    res.status(200);
+    res.send("Testing purpose 200.");
+    console.log(req.path);
+    console.log(req.params);
+    console.log(req.query);
 })
 
+// Other paths here.
 
-// Process error handler:
-process.on("uncaughtException", err => {
+/**
+ * ALL *
+ * 404 handler.
+ */
+app.all("*", function(req, res){
+    res.status(404)
+    res.end();
+})
+
+// noinspection JSCheckFunctionSignatures
+app.use(expressErrorHandler);
+
+const server = app.listen(config.port, () => {
+    logger.info("Server running on port "+config.port);
+});
+
+// Process error handler (below listener so we can close server and let it gracefully exit.)
+process.on("uncaughtException", function(err){
     logger.error("Uncaught exception occurred: "+err.stack);
 
     const discord = require("./DiscordWebhook");
     discord.sendWebhook('error', "[Internal]\n```" + err.stack.substr(0, 1960) + "```")
 
-    //process.exit(1);
-})
+    server.close();
+    process.exitCode = 1;
+}.bind(server))
 
 // Handle errors that occur during handling of requests:
 // noinspection JSUnusedLocalSymbols (Must have 4 arguments for express to know its a error handler.)
@@ -72,12 +99,6 @@ function expressErrorHandler(err, req, res, next){
     res.status(500);
     res.send("Internal Server Error, Request ID: "+req.id);
 }
-// noinspection JSCheckFunctionSignatures
-app.use(expressErrorHandler);
-
-app.listen(config.port, () => {
-    logger.info("Server running on port "+config.port);
-});
 
 logger.info("Setup complete, Server should start shortly.");
 
