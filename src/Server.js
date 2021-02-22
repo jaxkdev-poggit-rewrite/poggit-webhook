@@ -46,14 +46,29 @@ app.get("/", function(req, res){
 });
 
 /**
+ * POST /github/*
+ * Verify needed headers are present before continuing to handler.
+ */
+app.post("/github/*", function(req, res, next){
+    const event = req.header("X-GitHub-Event");
+    const delivery = req.header("X-GitHub-Delivery");
+    if(delivery === undefined || event === undefined){
+        res.status(400);
+        res.end();
+    }else{
+        logger.info("["+req.id+"] Received github event ("+event+")");
+        next();
+    }
+})
+
+/**
  * POST /github/webhook_id
  */
 app.post("/github/:webhookId", function(req, res){
+    const webhookId = req.params['webhookId'];
     res.status(200);
-    res.send("Testing purpose 200.");
-    console.log(req.path);
-    console.log(req.params);
-    console.log(req.query);
+    res.send("Testing purpose 200 - "+webhookId);
+    console.log(req.body);
 })
 
 // Other paths here.
