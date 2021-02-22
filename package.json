@@ -1,0 +1,20 @@
+{
+  "name": "poggit-webhook",
+  "version": "1.0.0",
+  "description": "Poggits webhook backend server",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaxkdev-poggit-rewrite/poggit-webhook.git"
+  },
+  "author": "JaxkDev, SOF3",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/jaxkdev-poggit-rewrite/poggit-webhook/issues"
+  },
+  "homepage": "https://github.com/jaxkdev-poggit-rewrite/poggit-webhook#readme"
+}
