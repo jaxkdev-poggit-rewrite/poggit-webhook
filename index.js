@@ -13,4 +13,43 @@
  *  limitations under the License.
  */
 
-console.log("Hello.");
+const express = require("express");
+const app = express();
+
+process.on("uncaughtException", err => {
+    console.error("There was an uncaught error", err);
+    process.exit(1);
+})
+
+// noinspection JSUnusedLocalSymbols
+function errorHandler(err, req, res, next){
+    console.error("["+req.id+"] Internal server error: ",err.stack);
+
+    res.status(500);
+    res.send("Internal Server Error");
+}
+
+app.use(function(req, res, next){
+    //Add some data to request for logging purposes.
+    const crypto = require("crypto");
+    req.id = crypto.randomBytes(12).toString("hex");
+    req.ip = req.headers["x-forwarded-for"] || req.ip;
+
+    res.setHeader("X-Poggit-Request-ID", req.id);
+    res.removeHeader("X-Powered-By");
+    console.log("Request ("+req.url+") received from ("+req.ip+"), RequestID: "+req.id);
+    next();
+})
+
+app.get("/", function(req, res){
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "text/plain");
+    res.send("Request ID: "+req.id);
+});
+
+// noinspection JSCheckFunctionSignatures
+app.use(errorHandler);
+
+app.listen(80, () => {
+    console.log("Server running on port 80");
+});

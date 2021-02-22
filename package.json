@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/jaxkdev-poggit-rewrite/poggit-webhook/issues"
   },
-  "homepage": "https://github.com/jaxkdev-poggit-rewrite/poggit-webhook#readme"
+  "homepage": "https://github.com/jaxkdev-poggit-rewrite/poggit-webhook#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
