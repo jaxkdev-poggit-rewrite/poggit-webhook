@@ -22,7 +22,9 @@ const config = require("../config.json");
 
 logger.info("Loading server handlers...");
 const express = require("express");
+const bodyParser = require("body-parser");
 const app = express();
+app.use(bodyParser.json());
 
 //Add some data to request for logging purposes before any handlers.
 app.use(function(req, res, next){
