@@ -15,10 +15,9 @@
 
 module.exports = async function(req, res){
     const logger = require("winston");
-    logger.info("["+req.id+"] Handling push event for '"+req.body['repository']['full_name']+"'");
+    logger.info("[" + req.id + "] Handling push event for '"+req.body["repository"]["full_name"]+"'");
 
     //TODO.
 
-    res.status(200);
-    res.end();
+    res.status(200).end();
 }

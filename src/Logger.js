@@ -13,17 +13,17 @@
  *  limitations under the License.
  */
 
-const { createLogger, format, transports, add } = require('winston');
+const { createLogger, format, transports, add } = require("winston");
 const { combine, timestamp, printf, colorize, align} = format;
-const path = require('path')
-require('winston-daily-rotate-file');
+const path = require("path")
+require("winston-daily-rotate-file");
 
 const transport = new transports.DailyRotateFile({
-    filename: path.join(__dirname, '../logs', '%DATE%.log'),
-    datePattern: 'YYYY-MM-DD',
+    filename: path.join(__dirname, "../logs", "%DATE%.log"),
+    datePattern: "YYYY-MM-DD",
     zippedArchive: true,
-    maxSize: '20m',
-    level: 'debug'
+    maxSize: "20m",
+    level: "debug"
 });
 
 //https://github.com/winstonjs/winston/issues/1135#issuecomment-343980350
@@ -32,11 +32,9 @@ const alignedWithColorsAndTime = combine(
     timestamp(),
     align(),
     printf((info) => {
-        const {
-            timestamp, level, message, ...args
-        } = info;
+        const {timestamp, level, message, ...args} = info;
         const ts = timestamp.slice(11, 19);
-        return `[${ts} | ${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`;
+        return `[${ts} | ${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ""}`;
     }),
 );
 
@@ -44,13 +42,13 @@ const logger = createLogger({
     transports: [
         transport,
         new transports.Console({
-            level: 'debug',
+            level: "debug",
             format: alignedWithColorsAndTime
         })
     ],
     format: combine(
         timestamp(),
-        printf(({ level, message, timestamp }) => {
+        printf(({level, message, timestamp}) => {
             return `[${timestamp}] ${level}: ${message}`;
         })
     ),

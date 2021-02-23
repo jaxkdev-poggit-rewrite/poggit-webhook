@@ -14,11 +14,11 @@
  */
 
 //Wraps the mysql functions with promises to allow await in async functions (requests)
-const util = require( 'util' );
-const mysql = require( 'mysql' );
+const util = require("util");
+const mysql = require("mysql");
 
 module.exports = function(config){
-    const connection = mysql.createConnection( config );
+    const connection = mysql.createConnection(config);
     let connected = false;
     return {
         connect(){
@@ -31,10 +31,10 @@ module.exports = function(config){
         ping(){
             return util.promisify(connection.ping).call(connection);
         },
-        query(sql,args) {
+        query(sql,args){
             return util.promisify(connection.query).call(connection, sql, args);
         },
-        close() {
+        close(){
             connected = false;
             return util.promisify(connection.end).call(connection);
         },

@@ -17,17 +17,17 @@ function sendWebhook(type, content){
     const axios = require("axios");
     const logger = require("winston");
     const config = require("../config.json");
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve, reject){
         axios.post(config.discord[type], {
-            'content': content
-        }).then(r => {
-            if (r.status !== 204) {
+            "content": content
+        }).then((r) => {
+            if(r.status !== 204){
                 logger.error("Failed to deliver webhook(" + type + "): " + r.status + " - " + r.statusText);
                 reject(r);
-            } else {
+            }else{
                 resolve();
             }
-        }).catch(e => {
+        }).catch((e) => {
             logger.error("Failed to deliver webhook(" + type + "): " + e.response.status + " - " + e.response.statusText);
             reject(e.response);
         });

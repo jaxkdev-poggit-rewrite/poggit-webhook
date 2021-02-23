@@ -15,10 +15,16 @@
 
 module.exports = async function(req, res){
     const logger = require("winston");
-    logger.info("["+req.id+"] Handling pull_request action '"+req.body['action']+"' for '"+req.body['repository']['full_name']+"#"+req.body['number']+"'");
+    const action = req.body["action"];
+
+    logger.info("[" + req.id + "] Handling pull_request action '"+action+"' for '"+req.body["repository"]["full_name"]+"#"+req.body["number"]+"'");
+
+    if(!action in ["opened", "synchronize"]){
+        res.status(200).send("Action '" + action + "' is not used.");
+        return;
+    }
 
     //TODO.
 
-    res.status(200);
-    res.send();
+    res.status(200).end();
 }

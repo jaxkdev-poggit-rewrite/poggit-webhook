@@ -27,7 +27,7 @@ module.exports = function(config){
             return util.promisify(client.get).call(client, key);
         },*/
         rpush(key, ...data){
-            console.log(key, data);
+            return util.promisify(client.rpush).call(client, key, ...data);
         },
         getRawClient(){
             return client;
