@@ -7,6 +7,9 @@
     "password": "Password",
     "database": "Database name"
   },
+  "poggit": {
+    "hookSecret": "SAME hookSecret from poggit's config."
+  },
   "discord": {
     "error": "https://discord.com/api/webhooks/A/B"
   }

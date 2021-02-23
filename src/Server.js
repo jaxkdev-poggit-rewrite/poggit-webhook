@@ -42,6 +42,7 @@ const repositoryHandler = require("./handlers/Repository");
 
 const express = require("express");
 const bodyParser = require("body-parser");
+const crypto = require("crypto");
 const app = express();
 app.use(bodyParser.json());
 
@@ -79,18 +80,40 @@ app.get("/", async function(req, res){
 });
 
 /**
- * POST /github/webhook_id
+ * POST /github/webhookKey
+ * webhookKey (8byte hex)
  */
-app.post("/github/:webhookId", async function(req, res){
-    //TODO Check webhook key and hashes.
-    req.webhookId = req.params['webhookId'];
+app.post("/github/:webhookKey", async function(req, res){
+    req.webhookKey = req.params['webhookKey'];
+    req.webhookId = req.header("X-GitHub-Hook-ID");
     const event = req.header("X-GitHub-Event");
     const x_sig = req.header("X-Hub-Signature");
-    if(x_sig === undefined || event === undefined || req.webhookId === undefined){
+    if(x_sig === undefined || event === undefined || req.webhookId === undefined || req.webhookKey === undefined){
         res.status(400);
         res.send("Missing required parameters/headers.");
         return;
     }
+
+    if(!(/^[0-9a-f]{16}$/i.test(req.webhookKey))){
+        logger.error("["+req.id+"] Invalid webhook key '"+req.webhookKey+"'");
+        res.status(403);
+        res.send("Invalid webhook key.");
+        return;
+    }
+
+    let [algo, sig] = x_sig.split("=");
+    if(algo !== "sha1") logger.warning("["+req.id+"] "+x_sig+" Is not using sha1");
+
+    let expected_hash = crypto.createHmac(algo, config.poggit.hookSecret+req.webhookKey)
+        .update(Buffer.from(JSON.stringify(req.body), 'utf-8')).digest("hex");
+
+    if(expected_hash !== sig){
+        logger.error("["+req.id+"] Incorrect signature '"+sig+"'");
+        res.status(403);
+        res.send("Incorrect signature.");
+        return;
+    }
+
     logger.debug("["+req.id+"] Received valid github event '"+event+"'");
 
     switch(event){
@@ -136,13 +159,14 @@ server = app.listen(config.port, () => {
 // Process error handler (below listener so we can close server and let it gracefully exit.)
 async function internalErrorHandler(err){
     if (logger !== undefined) {
-        logger.error("Internal error occurred: " + err.stack);
+        logger.error("Internal error occurred: "+err.stack);
     } else {
-        console.error("Internal error occurred: ", err);
+        console.error("Internal error occurred: ", err.stack);
     }
 
-    const discord = require("./DiscordWebhook");
-    await discord.sendWebhook('error', "[Internal]\n```" + err.stack.substr(0, 1960) + "```")
+    if(err instanceof Error){
+        await require("./DiscordWebhook").sendWebhook('error', "[Internal]\n```" + err.stack.substr(0, 1960) + "```").catch(()=>{});
+    }
 
     if (server !== undefined) {
         server.close();
