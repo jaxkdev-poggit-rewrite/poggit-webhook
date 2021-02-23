@@ -17,6 +17,7 @@
 let server = undefined;
 let logger = undefined;
 let mysql = undefined;
+let redis = undefined;
 
 process.on("unhandledRejection", internalErrorHandler);
 process.on("uncaughtException", internalErrorHandler);
@@ -35,6 +36,10 @@ mysql.connect().then(() => {
     logger.info("mysql connected successfully.");
 });
 
+logger.info("Connecting to redis.");
+redis = require("./Redis")(config.redis);
+redis.getRawClient().on('error', internalErrorHandler);
+
 logger.info("Loading server handlers...");
 const pushHandler = require("./handlers/Push");
 const pullRequestHandler = require("./handlers/PullRequest");
@@ -51,6 +56,7 @@ app.use(bodyParser.json());
 app.use(function(req, res, next){
     req.id = "WS-"+utils.generateId(10);
     req.mysql = mysql;
+    req.redis = redis;
 
     let ip = req.header("x-forwarded-for");
     if(ip === undefined) ip = req.ip;
@@ -209,6 +215,12 @@ async function internalErrorHandler(err){
             await mysql.close().catch(() => {});
         }
         mysql = undefined;
+    }
+    if (redis !== undefined) {
+        if(redis.isConnected()) {
+            await redis.close();
+        }
+        redis = undefined;
     }
     process.exit(1);
 }

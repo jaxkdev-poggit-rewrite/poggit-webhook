@@ -1,11 +1,15 @@
 {
   "port": 80,
   "mysql": {
-    "host": "localhost",
+    "host": "127.0.0.1",
     "port": 3306,
     "user": "Username",
     "password": "Password",
     "database": "Database name"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379
   },
   "poggit": {
     "hookSecret": "SAME hookSecret from poggit's config."
