@@ -14,7 +14,7 @@
  */
 
 const { createLogger, format, transports, add } = require('winston');
-const { combine, timestamp, printf } = format;
+const { combine, timestamp, printf, colorize, align} = format;
 const path = require('path')
 require('winston-daily-rotate-file');
 
@@ -26,10 +26,27 @@ const transport = new transports.DailyRotateFile({
     level: 'debug'
 });
 
+//https://github.com/winstonjs/winston/issues/1135#issuecomment-343980350
+const alignedWithColorsAndTime = combine(
+    colorize(),
+    timestamp(),
+    align(),
+    printf((info) => {
+        const {
+            timestamp, level, message, ...args
+        } = info;
+        const ts = timestamp.slice(11, 19);
+        return `[${ts} | ${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`;
+    }),
+);
+
 const logger = createLogger({
     transports: [
         transport,
-        new transports.Console({ level: 'debug' }) //TODO Debug to console only in development mode.
+        new transports.Console({
+            level: 'debug',
+            format: alignedWithColorsAndTime
+        })
     ],
     format: combine(
         timestamp(),
@@ -41,7 +58,5 @@ const logger = createLogger({
 
 //Sets the default logger to the above.
 add(logger);
-
-logger.debug("------START------");
 
 module.exports = logger;
