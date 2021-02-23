@@ -33,18 +33,16 @@ logger.info("Connecting to mysql...");
 mysql = require("./MySql")(config.mysql);
 mysql.getRawConnection().on("error", internalErrorHandler);
 mysql.connect().then(() => {
-    logger.info("mysql connected successfully.");
+    logger.info("Connected to mysql successfully.");
+}).catch(() => {
+    logger.error("Failed to connect to mysql.")
 });
 
 logger.info("Connecting to redis.");
 redis = require("./Redis")(config.redis);
 redis.getRawClient().on("error", internalErrorHandler);
 
-logger.info("Loading server handlers...");
-const pushHandler = require("./handlers/Push");
-const pullRequestHandler = require("./handlers/PullRequest");
-const repositoryHandler = require("./handlers/Repository");
-
+logger.info("Loading express...");
 const express = require("express");
 const bodyParser = require("body-parser");
 const utils = require("./Utils");
@@ -79,7 +77,7 @@ app.use(function(req, res, next){
  * GET /
  * poggit-webhook doesnt actually provide ANY UI for users its sole purpose is to receive events from github webhooks.
  */
-app.get("/", async function(req, res){
+app.get("/", function(req, res){
     res.status(200).send("Hello there.");
 });
 
@@ -87,86 +85,12 @@ app.get("/", async function(req, res){
  * POST /github/webhookKey
  * webhookKey (8byte hex)
  */
-app.post("/github/:webhookKey", async function(req, res){
-    req.webhookKey = req.params["webhookKey"];
-    req.webhookId = req.header("X-GitHub-Hook-ID");
-    const event = req.header("X-GitHub-Event");
-    const x_sig = req.header("X-Hub-Signature");
-    if(x_sig === undefined || event === undefined || req.webhookId === undefined || req.webhookKey === undefined){
-        res.status(400).send("Missing required parameters/headers.");
-        return;
-    }
-
-    if(!(/^[0-9a-f]{16}$/i.test(req.webhookKey))){
-        logger.error("[" + req.id + "] Invalid webhook key '"+req.webhookKey+"'");
-        res.status(403).send("Invalid webhook key.");
-        return;
-    }
-
-    let [algo, sig] = x_sig.split("=");
-    if(algo !== "sha1") logger.warning("[" + req.id + "] " + x_sig + " Is not using sha1");
-
-    let expected_hash = utils.generateHash(config.poggit.hookSecret+req.webhookKey, JSON.stringify(req.body), algo);
-
-    if(expected_hash !== sig){
-        logger.error("[" + req.id + "] Incorrect signature '" + sig + "'");
-        res.status(403).send("Incorrect signature.");
-        return;
-    }
-
-    let rows = await mysql.query("SELECT repoId FROM repos WHERE webhookKey = ?", [Buffer.from(req.webhookKey, "hex")])
-        .catch((e) => {
-            expressErrorHandler(e, req, res, null);
-        });
-
-    if(rows === undefined) return; //Errored out.
-
-    // noinspection JSUnresolvedVariable
-    if(rows.length === 0){
-        logger.warn("[" + req.id + "] No repo found for webhook key '" + req.webhookKey + "'");
-        res.status(403).send("No repo found with this webhook key.");
-        return;
-    }
-    // noinspection JSUnresolvedVariable
-    if(rows.length > 1){
-        logger.error("[" + req.id + "] the 1 / 1.845E+19 probability that the same webhookKey is generated came true!");
-        res.status(403).send("the 1 / 1.845E+19 probability that the same webhookKey is generated came true!");
-        return;
-    }
-
-    if(rows[0]["repoId"] !== req.body["repository"]["id"]){
-        logger.warn("[" + req.id + "] Repo id (" + req.body["repository"]["id"] + ") given and repo id (" +
-            rows[0]["repoId"] + ") expected does not match.");
-        res.status(403).send("Repository ID's does not match.");
-        return;
-    }
-
-    logger.debug("[" + req.id + "] Received valid github event '"+event+"'");
-
-    switch(event){
-        case "ping":
-            res.status(200).send("Pong");
-            break;
-        case "push":
-            await pushHandler(req, res).catch((e) => {
-                expressErrorHandler(e, req, res, null);
-            });
-            break;
-        case "pull_request":
-            await pullRequestHandler(req, res).catch((e) => {
-                expressErrorHandler(e, req, res, null);
-            });
-            break;
-        case "repository":
-            await repositoryHandler(req, res).catch((e) => {
-                expressErrorHandler(e, req, res, null);
-            });
-            break;
-        default:
-            logger.warn("[" + req.id + "] Unsupported github event.")
-            res.status(400).send("Unsupported event: " + event);
-            break;
-    }
+app.post("/github/:webhookKey", function(req, res){
+    require("./handlers/GithubRepo")(req, res).catch((e) => {
+        //If the handler is an async function it will not call expressErrorHandler but internal error handler.
+        //So wrap the async handlers with a dummy function to catch any rejection errors correctly.
+        expressErrorHandler(e, req, res, null);
+    })
 })
 
 // Other paths here.
@@ -194,12 +118,6 @@ async function internalErrorHandler(err){
         console.error("Internal error occurred: ", err.stack);
     }
 
-    if(err instanceof Error){
-        await require("./DiscordWebhook")
-            .sendWebhook("error", "[Internal]\n```" + err.stack.substr(0, 1960) + "```")
-            .catch(()=>{});
-    }
-
     if(server !== undefined){
         server.close();
         server = undefined;
@@ -218,8 +136,8 @@ async function internalErrorHandler(err){
 // Handle errors that occur during handling of requests:
 // noinspection JSUnusedLocalSymbols (Must have 4 arguments for express to know its a error handler.)
 function expressErrorHandler(err, req, res, next){
-    if(req.id === undefined) req.id = "N/A - Internal";
-    logger.error("[" + req.id + "] Error occurred while handling request: "+err.stack);
+    if(req.id === undefined) req.id = "No ID";
+    logger.error("[" + req.id + "] Error occurred while handling request, "+err.stack);
 
     //Discord
     const discord = require("./DiscordWebhook");
