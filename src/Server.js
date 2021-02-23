@@ -13,14 +13,33 @@
  *  limitations under the License.
  */
 
+// Variables used to handle internal errors efficiently.
+let server = undefined;
+let logger = undefined;
+let mysql = undefined;
+
+process.on("unhandledRejection", internalErrorHandler);
+process.on("uncaughtException", internalErrorHandler);
+
 console.log("Loading logger...");
-const logger = require("./Logger");
+logger = require("./Logger");
 
 logger.info("Loading config...");
 //Caches so restart required for changes to take affect.
 const config = require("../config.json");
 
+logger.info("Connecting to mysql...");
+mysql = require("./MySql")(config.mysql);
+mysql.getRawConnection().on('error', internalErrorHandler);
+mysql.connect().then(() => {
+    logger.info("mysql connected successfully.");
+});
+
 logger.info("Loading server handlers...");
+const pushHandler = require("./handlers/Push");
+const pullRequestHandler = require("./handlers/PullRequest");
+const repositoryHandler = require("./handlers/Repository");
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const app = express();
@@ -30,11 +49,23 @@ app.use(bodyParser.json());
 app.use(function(req, res, next){
     const utils = require("./Utils");
     req.id = "WS-"+utils.generateId(10);
-    req.ip = req.headers["x-forwarded-for"] || req.ip;
+    req.mysql = mysql;
+
+    let ip = req.header("x-forwarded-for");
+    if(ip === undefined) ip = req.ip;
+    req.realIp = ip;
 
     res.setHeader("X-Poggit-Webhook-Request-ID", req.id);
     res.removeHeader("X-Powered-By");
-    logger.info("Request ("+req.url+") received from ("+req.ip+"), RequestID: "+req.id);
+    logger.debug("["+req.id+"] '"+req.url+"' received from ("+req.realIp+")");
+
+    //Check mysql is connected.
+    if(!req.mysql.isConnected()){
+        res.status(503);
+        res.send("Service Unavailable, Request ID: "+req.id);
+        return;
+    }
+
     next();
 })
 
@@ -42,35 +73,46 @@ app.use(function(req, res, next){
  * GET /
  * poggit-webhook doesnt actually provide ANY UI for users its sole purpose is to receive events from github webhooks.
  */
-app.get("/", function(req, res){
+app.get("/", async function(req, res){
     res.status(200);
-    res.send("200 - OK");
+    res.send(await req.mysql.query("SELECT * FROM users"));
 });
-
-/**
- * POST /github/*
- * Verify needed headers are present before continuing to handler.
- */
-app.post("/github/*", function(req, res, next){
-    const event = req.header("X-GitHub-Event");
-    const delivery = req.header("X-GitHub-Delivery");
-    if(delivery === undefined || event === undefined){
-        res.status(400);
-        res.end();
-    }else{
-        logger.info("["+req.id+"] Received github event ("+event+")");
-        next();
-    }
-})
 
 /**
  * POST /github/webhook_id
  */
-app.post("/github/:webhookId", function(req, res){
-    const webhookId = req.params['webhookId'];
-    res.status(200);
-    res.send("Testing purpose 200 - "+webhookId);
-    console.log(req.body);
+app.post("/github/:webhookId", async function(req, res){
+    //TODO Check webhook key and hashes.
+    req.webhookId = req.params['webhookId'];
+    const event = req.header("X-GitHub-Event");
+    const x_sig = req.header("X-Hub-Signature");
+    if(x_sig === undefined || event === undefined || req.webhookId === undefined){
+        res.status(400);
+        res.send("Missing required parameters/headers.");
+        return;
+    }
+    logger.debug("["+req.id+"] Received valid github event '"+event+"'");
+
+    switch(event){
+        case 'ping':
+            res.status(200);
+            res.send("Pong");
+            break;
+        case 'push':
+            await pushHandler(req, res);
+            break;
+        case 'pull_request':
+            await pullRequestHandler(req, res);
+            break;
+        case 'repository':
+            await repositoryHandler(req, res);
+            break;
+        default:
+            logger.warning("["+req.id+"] Unsupported github event.")
+            res.status(400);
+            res.send("Unsupported event: "+event);
+            break;
+    }
 })
 
 // Other paths here.
@@ -87,20 +129,33 @@ app.all("*", function(req, res){
 // noinspection JSCheckFunctionSignatures
 app.use(expressErrorHandler);
 
-const server = app.listen(config.port, () => {
+server = app.listen(config.port, () => {
     logger.info("Server running on port "+config.port);
 });
 
 // Process error handler (below listener so we can close server and let it gracefully exit.)
-process.on("uncaughtException", function(err){
-    logger.error("Uncaught exception occurred: "+err.stack);
+async function internalErrorHandler(err){
+    if (logger !== undefined) {
+        logger.error("Internal error occurred: " + err.stack);
+    } else {
+        console.error("Internal error occurred: ", err);
+    }
 
     const discord = require("./DiscordWebhook");
-    discord.sendWebhook('error', "[Internal]\n```" + err.stack.substr(0, 1960) + "```")
+    await discord.sendWebhook('error', "[Internal]\n```" + err.stack.substr(0, 1960) + "```")
 
-    server.close();
-    process.exitCode = 1;
-}.bind(server))
+    if (server !== undefined) {
+        server.close();
+        server = undefined;
+    }
+    if (mysql !== undefined) {
+        if(mysql.isConnected()){
+            await mysql.close().catch(() => {});
+        }
+        mysql = undefined;
+    }
+    process.exit(1);
+}
 
 // Handle errors that occur during handling of requests:
 // noinspection JSUnusedLocalSymbols (Must have 4 arguments for express to know its a error handler.)

@@ -1,6 +1,12 @@
 {
   "port": 80,
-
+  "mysql": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "Username",
+    "password": "Password",
+    "database": "Database name"
+  },
   "discord": {
     "error": "https://discord.com/api/webhooks/A/B"
   }
