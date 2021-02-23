@@ -42,13 +42,13 @@ const repositoryHandler = require("./handlers/Repository");
 
 const express = require("express");
 const bodyParser = require("body-parser");
-const crypto = require("crypto");
+const utils = require("./Utils");
+
 const app = express();
 app.use(bodyParser.json());
 
 //Add some data to request for logging purposes before any handlers.
 app.use(function(req, res, next){
-    const utils = require("./Utils");
     req.id = "WS-"+utils.generateId(10);
     req.mysql = mysql;
 
@@ -104,8 +104,7 @@ app.post("/github/:webhookKey", async function(req, res){
     let [algo, sig] = x_sig.split("=");
     if(algo !== "sha1") logger.warning("["+req.id+"] "+x_sig+" Is not using sha1");
 
-    let expected_hash = crypto.createHmac(algo, config.poggit.hookSecret+req.webhookKey)
-        .update(Buffer.from(JSON.stringify(req.body), 'utf-8')).digest("hex");
+    let expected_hash = utils.generateHash(config.poggit.hookSecret+req.webhookKey, JSON.stringify(req.body), algo);
 
     if(expected_hash !== sig){
         logger.error("["+req.id+"] Incorrect signature '"+sig+"'");

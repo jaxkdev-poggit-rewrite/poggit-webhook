@@ -13,9 +13,14 @@
  *  limitations under the License.
  */
 
+const crypto = require("crypto");
+
 function generateId(size = 8){
-    const crypto = require("crypto");
     return crypto.randomBytes(size).toString("hex");
 }
 
-module.exports = {generateId, 'fs': 2};
+function generateHash(key, data, algorithm = "sha1", output = "hex"){
+    return crypto.createHmac(algorithm, key).update(Buffer.from(data, 'utf-8')).digest(output);
+}
+
+module.exports = {generateId, generateHash};
