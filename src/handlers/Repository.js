@@ -15,9 +15,21 @@
 
 module.exports = async function(req, res){
     const logger = require("winston");
-    logger.info("["+req.id+"] Handling repository action '"+req.body['action']+"' for repo '"+req.body['repository']['full_name']+"'");
+    const action = req.body['action'];
+    if(action !== "deleted"){
+        res.status(200);
+        res.send("Action '" + action + "' is not used.");
+        return;
+    }
 
-    //TODO.
+    logger.info("["+req.id+"] Handling repository action 'deleted' for repo '"+req.body['repository']['full_name']+"'");
+
+    //No need to wait for this before sending response.
+    req.sql.query("DELETE repos.* FROM repos WHERE repoId = ?", [req.body['repository']['id']]).then(() => {
+        logger.info("["+req.id+"] Repo ("+req.body['repository']['id']+") "+req.body['repository']['full_name']+" has been deleted.");
+    }).catch((e) => {
+        logger.error("["+req.id+"] Repo ("+req.body['repository']['id']+") "+req.body['repository']['full_name']+" has failed to delete.\n"+e.stack);
+    });
 
     res.status(200);
     res.end();
