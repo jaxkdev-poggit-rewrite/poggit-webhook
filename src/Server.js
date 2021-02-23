@@ -114,6 +114,33 @@ app.post("/github/:webhookKey", async function(req, res){
         return;
     }
 
+    let rows = await mysql.query("SELECT repoId FROM repos WHERE webhookKey = ?", [Buffer.from(req.webhookKey, 'hex')]).catch((e) => {
+        expressErrorHandler(e, req, res, null);
+    });
+    if(rows === undefined) return; //Errored out.
+
+    // noinspection JSUnresolvedVariable
+    if(rows.length === 0){
+        logger.warn("["+req.id+"] No repo found for webhook key '"+req.webhookKey+"'");
+        res.status(403);
+        res.send("No repo found with this webhook key.");
+        return;
+    }
+    // noinspection JSUnresolvedVariable
+    if(rows.length > 1){
+        logger.error("["+req.id+"] the 1 / 1.845E+19 probability that the same webhookKey is generated came true!");
+        res.status(403);
+        res.send("the 1 / 1.845E+19 probability that the same webhookKey is generated came true!");
+        return;
+    }
+
+    if(rows[0]["repoId"] !== req.body['repository']['id']){
+        logger.warn("["+req.id+"] Repo id ("+req.body['repository']['id']+") given and repo id ("+rows[0]["repoId"]+") expected does not match.");
+        res.status(403);
+        res.send("Repository ID's does not match.");
+        return;
+    }
+
     logger.debug("["+req.id+"] Received valid github event '"+event+"'");
 
     switch(event){
@@ -131,7 +158,7 @@ app.post("/github/:webhookKey", async function(req, res){
             await repositoryHandler(req, res);
             break;
         default:
-            logger.warning("["+req.id+"] Unsupported github event.")
+            logger.warn("["+req.id+"] Unsupported github event.")
             res.status(400);
             res.send("Unsupported event: "+event);
             break;
