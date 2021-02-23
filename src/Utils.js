@@ -16,11 +16,11 @@
 const crypto = require("crypto");
 
 function generateId(size = 8){
-    return crypto.randomBytes(size).toString("hex");
+	return crypto.randomBytes(size).toString("hex");
 }
 
 function generateHash(key, data, algorithm = "sha1", output = "hex"){
-    return crypto.createHmac(algorithm, key).update(Buffer.from(data, "utf-8")).digest(output);
+	return crypto.createHmac(algorithm, key).update(Buffer.from(data, "utf-8")).digest(output);
 }
 
 module.exports = {generateId, generateHash};

@@ -14,22 +14,22 @@
  */
 
 module.exports = async function(req, res){
-    const logger = require("winston");
-    const action = req.body["action"];
+	const logger = require("winston");
+	const action = req.body["action"];
 
-    logger.info("[" + req.id + "] Handling repository action '"+action+"' for repo '"+req.body["repository"]["full_name"]+"'");
+	logger.info("[" + req.id + "] Handling repository action '"+action+"' for repo '"+req.body["repository"]["full_name"]+"'");
 
-    if(action !== "deleted"){
-        res.status(200).send("Action '" + action + "' is not used.");
-        return;
-    }
+	if(action !== "deleted"){
+		res.status(200).send("Action '" + action + "' is not used.");
+		return;
+	}
 
-    //No need to wait for this before sending response.
-    req.mysql.query("DELETE repos.* FROM repos WHERE repoId = ?", [req.body["repository"]["id"]]).then(() => {
-        logger.info("[" + req.id + "] Repo ("+req.body["repository"]["id"]+") "+req.body["repository"]["full_name"]+" has been deleted.");
-    }).catch((e) => {
-        logger.error("[" + req.id + "] Repo ("+req.body["repository"]["id"]+") "+req.body["repository"]['full_name']+" has failed to delete.\n"+e.stack);
-    });
+	//No need to wait for this before sending response.
+	req.mysql.query("DELETE repos.* FROM repos WHERE repoId = ?", [req.body["repository"]["id"]]).then(() => {
+		logger.info("[" + req.id + "] Repo ("+req.body["repository"]["id"]+") "+req.body["repository"]["full_name"]+" has been deleted.");
+	}).catch((e) => {
+		logger.error("[" + req.id + "] Repo ("+req.body["repository"]["id"]+") "+req.body["repository"]['full_name']+" has failed to delete.\n"+e.stack);
+	});
 
-    res.status(200).end();
+	res.status(200).end();
 }

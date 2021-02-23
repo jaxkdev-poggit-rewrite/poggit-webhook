@@ -18,31 +18,31 @@ const util = require("util");
 const mysql = require("mysql");
 
 module.exports = function(config){
-    const connection = mysql.createConnection(config);
-    let connected = false;
-    return {
-        connect(){
-            const tmp = util.promisify(connection.connect).call(connection);
-            tmp.then(() => {
-                connected = true;
-            })
-            return tmp;
-        },
-        ping(){
-            return util.promisify(connection.ping).call(connection);
-        },
-        query(sql,args){
-            return util.promisify(connection.query).call(connection, sql, args);
-        },
-        close(){
-            connected = false;
-            return util.promisify(connection.end).call(connection);
-        },
-        getRawConnection(){
-            return connection;
-        },
-        isConnected(){
-            return connected;
-        }
-    };
+	const connection = mysql.createConnection(config);
+	let connected = false;
+	return {
+		connect(){
+			const tmp = util.promisify(connection.connect).call(connection);
+			tmp.then(() => {
+				connected = true;
+			})
+			return tmp;
+		},
+		ping(){
+			return util.promisify(connection.ping).call(connection);
+		},
+		query(sql,args){
+			return util.promisify(connection.query).call(connection, sql, args);
+		},
+		close(){
+			connected = false;
+			return util.promisify(connection.end).call(connection);
+		},
+		getRawConnection(){
+			return connection;
+		},
+		isConnected(){
+			return connected;
+		}
+	};
 }

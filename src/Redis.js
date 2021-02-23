@@ -18,25 +18,25 @@ const util = require("util");
 const redis = require("redis");
 
 module.exports = function(config){
-    const client = redis.createClient(config);
-    return {
-        /*set(key, value){
-            return util.promisify(client.set).call(client, key, value);
-        },
-        get(key){
-            return util.promisify(client.get).call(client, key);
-        },*/
-        rpush(key, ...data){
-            return util.promisify(client.rpush).call(client, key, ...data);
-        },
-        getRawClient(){
-            return client;
-        },
-        isConnected(){
-            return client.connected;
-        },
-        close(){
-            return util.promisify(client.quit).call(client)
-        }
-    };
+	const client = redis.createClient(config);
+	return {
+		/*set(key, value){
+			return util.promisify(client.set).call(client, key, value);
+		},
+		get(key){
+			return util.promisify(client.get).call(client, key);
+		},*/
+		rpush(key, ...data){
+			return util.promisify(client.rpush).call(client, key, ...data);
+		},
+		getRawClient(){
+			return client;
+		},
+		isConnected(){
+			return client.connected;
+		},
+		close(){
+			return util.promisify(client.quit).call(client)
+		}
+	};
 }
