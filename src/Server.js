@@ -148,13 +148,19 @@ app.post("/github/:webhookKey", async function(req, res){
             res.send("Pong");
             break;
         case 'push':
-            await pushHandler(req, res);
+            await pushHandler(req, res).catch((e) => {
+                expressErrorHandler(e, req, res, null);
+            });
             break;
         case 'pull_request':
-            await pullRequestHandler(req, res);
+            await pullRequestHandler(req, res).catch((e) => {
+                expressErrorHandler(e, req, res, null);
+            });
             break;
         case 'repository':
-            await repositoryHandler(req, res);
+            await repositoryHandler(req, res).catch((e) => {
+                expressErrorHandler(e, req, res, null);
+            });
             break;
         default:
             logger.warn("["+req.id+"] Unsupported github event.")
@@ -211,7 +217,7 @@ async function internalErrorHandler(err){
 // noinspection JSUnusedLocalSymbols (Must have 4 arguments for express to know its a error handler.)
 function expressErrorHandler(err, req, res, next){
     if(req.id === undefined) req.id = "N/A - Internal";
-    logger.error("["+req.id+"]",err);
+    logger.error("["+req.id+"] Error occurred while handling request: "+err.stack);
 
     //Discord
     const discord = require("./DiscordWebhook");
