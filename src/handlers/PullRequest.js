@@ -19,7 +19,7 @@ module.exports = async function(req, res){
 
 	logger.info("[" + req.id + "] Handling pull_request action '"+action+"' for '"+req.body["repository"]["full_name"]+"#"+req.body["number"]+"'");
 
-	if(!action in ["opened", "synchronize"]){
+	if(!["opened", "synchronize"].includes(action)){
 		res.status(200).send("Action '" + action + "' is not used.");
 		return;
 	}
