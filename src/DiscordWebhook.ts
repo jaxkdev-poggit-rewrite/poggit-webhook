@@ -13,25 +13,28 @@
  *  limitations under the License.
  */
 
-function sendWebhook(type, content){
-	const axios = require("axios");
-	const logger = require("winston");
-	const config = require("../config.json");
-	return new Promise(function(resolve, reject){
-		axios.post(config.discord[type], {
+import axios from "axios";
+import logger from "./Logger";
+import config from "../config.json";
+
+function sendWebhook(url: string, content: string){
+	return new Promise<void>((resolve, reject) => {
+		axios.post(url, {
 			"content": content
 		}).then((r) => {
 			if(r.status !== 204){
-				logger.error("Failed to deliver webhook(" + type + "): " + r.status + " - " + r.statusText);
+				logger.error("Failed to deliver webhook: " + r.status + " - " + r.statusText);
 				reject(r);
 			}else{
 				resolve();
 			}
 		}).catch((e) => {
-			logger.error("Failed to deliver webhook(" + type + "): " + e.response.status + " - " + e.response.statusText);
+			logger.error("Failed to deliver webhook: " + e.response.status + " - " + e.response.statusText);
 			reject(e.response);
 		});
 	})
 }
 
-module.exports = {sendWebhook};
+export function logError(content: string){
+	return sendWebhook(config.discord.error, content);
+}

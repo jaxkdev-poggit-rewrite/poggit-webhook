@@ -13,14 +13,15 @@
  *  limitations under the License.
  */
 
-const crypto = require("crypto");
+import {Response as r} from "express";
+import MySql from "./MySql";
 
-function generateId(size = 8){
-	return crypto.randomBytes(size).toString("hex");
+export default interface Response extends r{
+	locals: {
+		webhookKey: string;
+		webhookId: string;
+		id: string,
+		ip: string,
+		mysql: MySql
+	}
 }
-
-function generateHash(key, data, algorithm = "sha1", output = "hex"){
-	return crypto.createHmac(algorithm, key).update(Buffer.from(data, "utf-8")).digest(output);
-}
-
-module.exports = {generateId, generateHash};

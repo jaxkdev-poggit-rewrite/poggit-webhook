@@ -13,18 +13,11 @@
  *  limitations under the License.
  */
 
-module.exports = async function(req, res){
-	const logger = require("winston");
-	const action = req.body["action"];
+import {PoolConnection} from "mysql";
 
-	logger.info("[" + req.id + "] Handling pull_request action '"+action+"' for '"+req.body["repository"]["full_name"]+"#"+req.body["number"]+"'");
-
-	if(!["opened", "synchronize"].includes(action)){
-		res.status(200).send("Action '" + action + "' is not used.");
-		return;
-	}
-
-	//TODO.
-
-	res.status(200).end();
+export default interface MySql{
+	ping(): Promise<void>,
+	query(sql: string, args: (string|number|Buffer)[]): Promise<any[]>,
+	release(): Promise<unknown>,
+	getRawConnection(): PoolConnection
 }

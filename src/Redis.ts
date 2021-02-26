@@ -13,20 +13,23 @@
  *  limitations under the License.
  */
 
-//Wraps the redis functions with promises to allow await in async functions (requests)
-const util = require("util");
-const redis = require("redis");
+/*Wraps the redis functions with promises to allow await in async functions (requests)
+import util from "util";
+import redis from "redis";
+import config from "../config.json";
 
-module.exports = function(config){
-	const client = redis.createClient(config);
+const client = redis.createClient(config.redis);
+
+export default function(){
 	return {
-		/*set(key, value){
+		set(key, value){
 			return util.promisify(client.set).call(client, key, value);
 		},
 		get(key){
 			return util.promisify(client.get).call(client, key);
-		},*/
-		rpush(key, ...data){
+		},
+		rpush(key: string|number, ...data: (string|number)[]){
+			// @ts-ignore
 			return util.promisify(client.rpush).call(client, key, ...data);
 		},
 		getRawClient(){
@@ -39,4 +42,4 @@ module.exports = function(config){
 			return util.promisify(client.quit).call(client)
 		}
 	};
-}
+}*/

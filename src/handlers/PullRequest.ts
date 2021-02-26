@@ -13,23 +13,21 @@
  *  limitations under the License.
  */
 
-module.exports = async function(req, res){
-	const logger = require("winston");
+import {Request} from "express";
+import Response from "../../types/Response";
+import logger from "../Logger";
+
+export default async function(req: Request, res: Response){
 	const action = req.body["action"];
 
-	logger.info("[" + req.id + "] Handling repository action '"+action+"' for repo '"+req.body["repository"]["full_name"]+"'");
+	logger.info(`[${res.locals.id}] Handling pull_request action '${action}' for '${req.body["repository"]["full_name"]}#${req.body["number"]}'`);
 
-	if(action !== "deleted"){
+	if(!["opened", "synchronize"].includes(action)){
 		res.status(200).send("Action '" + action + "' is not used.");
 		return;
 	}
 
-	//No need to wait for this before sending response.
-	req.mysql.query("DELETE repos.* FROM repos WHERE repoId = ?", [req.body["repository"]["id"]]).then(() => {
-		logger.info("[" + req.id + "] Repo ("+req.body["repository"]["id"]+") "+req.body["repository"]["full_name"]+" has been deleted.");
-	}).catch((e) => {
-		logger.error("[" + req.id + "] Repo ("+req.body["repository"]["id"]+") "+req.body["repository"]['full_name']+" has failed to delete.\n"+e.stack);
-	});
+	//TODO.
 
 	res.status(200).end();
 }

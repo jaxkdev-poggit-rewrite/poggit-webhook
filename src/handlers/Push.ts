@@ -13,9 +13,12 @@
  *  limitations under the License.
  */
 
-module.exports = async function(req, res){
+import {Request} from "express";
+import Response from "../../types/Response";
+
+export default async function(req: Request, res: Response){
 	const logger = require("winston");
-	logger.info("[" + req.id + "] Handling push event for '"+req.body["repository"]["full_name"]+"'");
+	logger.info(`[${res.locals.id}] Handling push event for '${req.body["repository"]["full_name"]}'`);
 
 	//TODO.
 
